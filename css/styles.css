@@ -1,0 +1,24 @@
+#output {
+    width: 100px;
+    height: 80px;
+    border: 1px solid purple;
+    background: lightgray;
+    margin-bottom: 10px;
+    border-radius: 2px;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 24px;
+    line-height: 80px;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#plus, #minus {
+    background: purple;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 5px;
+    border: 0;
+    font-weight: bold;
+    margin: 0 12px;
+    cursor: pointer;
+}
