@@ -81,7 +81,9 @@ export class SmallState {
         }
 
         delete this.#state[property]
+        delete this.#initial[property]
         delete this.#subscriptions[property]
+        this.#locked = this.#locked.filter((locked) => locked !== property)
 
         return this
     }
