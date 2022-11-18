@@ -28,3 +28,10 @@ elMinus.click()
 elPlus.click()
 
 STORE.unsubscribe("clicked", logResult)
+console.log("No more logging on change!")
+
+elPlus.click()
+elPlus.click()
+elPlus.click()
+elMinus.click()
+elPlus.click()
