@@ -50,7 +50,7 @@ export class SmallState {
 
         this.#state[property] = value
 
-        this.checkSubscriptions(property)
+        this.emit(property)
 
         return value
     }
@@ -107,7 +107,7 @@ export class SmallState {
                 : this.#subscriptions[property].filter((cb) => cb !== callback)
     }
 
-    checkSubscriptions(property) {
+    emit(property) {
         this.#subscriptions[property]
         .forEach((callback) => callback(this.get(property)))
     }
