@@ -9,7 +9,7 @@ const elMinus = document.getElementById("minus")
 const updateOutput = (val) => elOutput.textContent = val
 const logResult = (val) => console.log(`current value of 'clicked' -- ${val}`)
 
-STORE.create("clicked", 0)
+STORE.add("clicked", 0)
 
 STORE.subscribe("clicked", updateOutput)
 STORE.subscribe("clicked", logResult)

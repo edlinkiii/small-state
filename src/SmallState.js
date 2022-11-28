@@ -11,7 +11,7 @@ export class SmallState {
         this.#subscriptions = {}
     }
 
-    create(property, value=undefined, locked=false) {
+    add(property, value=undefined, locked=false) {
         if(this.#state.hasOwnProperty(property)) {
             console.error(`Specified state property already exists.`)
             return false
