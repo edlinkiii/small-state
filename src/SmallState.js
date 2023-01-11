@@ -1,14 +1,20 @@
 export class SmallState {
+    static #instance
     #state
     #initial
     #locked
     #subscriptions
 
     constructor() {
+        if(SmallState.#instance) {
+            return SmallState.#instance
+        }
+
         this.#state = {}
         this.#initial = {}
         this.#locked = []
         this.#subscriptions = {}
+        SmallState.#instance = this
     }
 
     add(property, value=undefined, locked=false) {
