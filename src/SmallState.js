@@ -1,26 +1,19 @@
 export class SmallState {
     static #instance
-    #state
-    #initial
-    #locked
-    #subscriptions
+    #state = {}
+    #initial = {}
+    #locked = []
+    #subscriptions = {}
 
     constructor() {
-        if(SmallState.#instance) {
-            return SmallState.#instance
-        }
+        if(SmallState.#instance) return SmallState.#instance
 
-        this.#state = {}
-        this.#initial = {}
-        this.#locked = []
-        this.#subscriptions = {}
         SmallState.#instance = this
     }
 
-    add(property, value=undefined, locked=false) {
+    add(property, value=null, locked=false) {
         if(this.#state.hasOwnProperty(property)) {
-            console.error(`Specified state property already exists.`)
-            return false
+            throw new Error("Specified state property already exists.")
         }
 
         this.#initial[property] = value
@@ -29,15 +22,14 @@ export class SmallState {
 
         this.reset(property)
 
-        locked && this.#locked.push(property)
+        if(locked) this.#locked.push(property)
 
         return this
     }
 
     get(property) {
         if(!this.#state.hasOwnProperty(property)) {
-            console.error(`Specified state property does not exist.`)
-            return false
+            throw new Error("Specified state property does not exist.")
         }
 
         return this.#state[property]
@@ -45,13 +37,11 @@ export class SmallState {
 
     set(property, value) {
         if(!this.#state.hasOwnProperty(property)) {
-            console.error(`Specified state property does not exist.`)
-            return false
+            throw new Error("Specified state property does not exist.")
         }
 
         if(this.#locked.includes(property)) {
-            console.error(`Specified state property is not alterable.`)
-            return false
+            throw new Error("Specified state property is not alterable.")
         }
 
         this.#state[property] = value
@@ -63,13 +53,11 @@ export class SmallState {
 
     reset(property) {
         if(!this.#state.hasOwnProperty(property)) {
-            console.error(`Specified state property does not exist.`)
-            return false
+            throw new Error("Specified state property does not exist.")
         }
 
         if(this.#locked.includes(property)) {
-            console.error(`Specified state property is not alterable.`)
-            return false
+            throw new Error("Specified state property is not alterable.")
         }
 
         return this.set(property, this.#initial[property])
@@ -77,13 +65,11 @@ export class SmallState {
 
     remove(property) {
         if(!this.#state.hasOwnProperty(property)) {
-            console.error(`Specified state property does not exist.`)
-            return false
+            throw new Error("Specified state property does not exist.")
         }
 
         if(this.#locked.includes(property)) {
-            console.error(`Specified state property is not alterable.`)
-            return false
+            throw new Error("Specified state property is not alterable.")
         }
 
         delete this.#state[property]
@@ -96,8 +82,7 @@ export class SmallState {
 
     subscribe(property, callback) {
         if(typeof property === "string" && !this.#state.hasOwnProperty(property)) {
-            console.error(`Specified state property does not exist.`)
-            return
+            throw new Error("Specified state property does not exist.")
         }
 
         Array.isArray(property)
@@ -114,7 +99,9 @@ export class SmallState {
     }
 
     emit(property) {
-        this.#subscriptions[property]
-        .forEach((callback) => callback(this.get(property)))
+        if (!this.#subscriptions[property]?.length) return
+  
+        const value = this.get(property)
+        this.#subscriptions[property].forEach((callback) => callback(value))
     }
 }
