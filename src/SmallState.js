@@ -4,19 +4,15 @@ export class SmallState {
     #initial = {}
     #locked = []
     #subscriptions = {}
-    #propertyExists(property) {
-        return this.#state.hasOwnProperty(property)
-    }
-    #propertyIsLocked(property) {
-        return this.#locked.includes(property)
-    }
+    #propertyExists = (property) => this.#state.hasOwnProperty(property)
+    #propertyIsLocked = (property) => this.#locked.includes(property)
 
     constructor() {
         if (SmallState.#instance) return SmallState.#instance
 
         this.ERROR_PROPERTY_ALREADY_EXISTS = "Specified state property already exists."
         this.ERROR_PROPERTY_DOES_NOT_EXIST = "Specified state property does not exist."
-        this.ERROR_PROPERTY_IS_LOCKED = "__Specified state property is not alterable."
+        this.ERROR_PROPERTY_IS_LOCKED = "Specified state property is not alterable."
         this.TYPE_STRING = "string"
 
         SmallState.#instance = this
@@ -24,7 +20,7 @@ export class SmallState {
 
     add(property, value = null, locked = false) {
         const propertyAlredyExist = this.#propertyExists(property)
-        if (propertyAlredyExist) throw new Error(ERROR_PROPERTY_ALREADY_EXISTS)
+        if (propertyAlredyExist) throw new Error(this.ERROR_PROPERTY_ALREADY_EXISTS)
 
         this.#initial[property] = value
         this.#state[property] = undefined
@@ -38,13 +34,13 @@ export class SmallState {
     }
 
     get(property) {
-        if (!this.#propertyExists(property)) throw new Error(ERROR_PROPERTY_DOES_NOT_EXIST)
+        if (!this.#propertyExists(property)) throw new Error(this.ERROR_PROPERTY_DOES_NOT_EXIST)
 
         return this.#state[property]
     }
 
     set(property, value) {
-        if (!this.#propertyExists(property)) throw new Error(ERROR_PROPERTY_DOES_NOT_EXIST)
+        if (!this.#propertyExists(property)) throw new Error(this.ERROR_PROPERTY_DOES_NOT_EXIST)
         if (this.#propertyIsLocked(property)) throw new Error(this.ERROR_PROPERTY_IS_LOCKED)
 
         this.#state[property] = value
@@ -54,14 +50,14 @@ export class SmallState {
     }
 
     reset(property) {
-        if (!this.#propertyExists(property)) throw new Error(ERROR_PROPERTY_DOES_NOT_EXIST)
+        if (!this.#propertyExists(property)) throw new Error(this.ERROR_PROPERTY_DOES_NOT_EXIST)
         if (this.#propertyIsLocked(property)) throw new Error(this.ERROR_PROPERTY_IS_LOCKED)
 
         return this.set(property, this.#initial[property])
     }
 
     remove(property) {
-        if (!this.#propertyExists(property)) throw new Error(ERROR_PROPERTY_DOES_NOT_EXIST)
+        if (!this.#propertyExists(property)) throw new Error(this.ERROR_PROPERTY_DOES_NOT_EXIST)
         if (this.#propertyIsLocked(property)) throw new Error(this.ERROR_PROPERTY_IS_LOCKED)
 
         delete this.#state[property]
@@ -73,7 +69,7 @@ export class SmallState {
 
     subscribe(property, callback) {
         const propertyIsString = typeof property === this.TYPE_STRING
-        if (propertyIsString && !this.#propertyExists(property)) throw new Error(ERROR_PROPERTY_DOES_NOT_EXIST)
+        if (propertyIsString && !this.#propertyExists(property)) throw new Error(this.ERROR_PROPERTY_DOES_NOT_EXIST)
 
         const subscriptions = this.#subscriptions[property]
         Array.isArray(property)
