@@ -6,15 +6,27 @@ export class SmallState {
     #subscriptions = {}
 
     constructor() {
-        if(SmallState.#instance) return SmallState.#instance
+        if (SmallState.#instance) return SmallState.#instance
+
+        this.ERROR_PROPERTY_ALREADY_EXISTS = "Specified state property already exists."
+        this.ERROR_PROPERTY_DOES_NOT_EXIST = "Specified state property does not exist."
+        this.ERROR_PROPERTY_IS_LOCKED = "__Specified state property is not alterable."
+        this.TYPE_STRING = "string"
 
         SmallState.#instance = this
     }
 
-    add(property, value=null, locked=false) {
-        if(this.#state.hasOwnProperty(property)) {
-            throw new Error("Specified state property already exists.")
-        }
+    propertyExists(property) {
+        return this.#state.hasOwnProperty(property)
+    }
+
+    propertyIsLocked(property) {
+        return this.#locked.includes(property)
+    }
+
+    add(property, value = null, locked = false) {
+        const propertyAlredyExist = this.propertyExists(property)
+        if (propertyAlredyExist) throw new Error(ERROR_PROPERTY_ALREADY_EXISTS)
 
         this.#initial[property] = value
         this.#state[property] = undefined
@@ -22,86 +34,69 @@ export class SmallState {
 
         this.reset(property)
 
-        if(locked) this.#locked.push(property)
+        if (locked) this.#locked.push(property)
 
         return this
     }
 
     get(property) {
-        if(!this.#state.hasOwnProperty(property)) {
-            throw new Error("Specified state property does not exist.")
-        }
+        if (!this.propertyExists(property)) throw new Error(ERROR_PROPERTY_DOES_NOT_EXIST)
 
         return this.#state[property]
     }
 
     set(property, value) {
-        if(!this.#state.hasOwnProperty(property)) {
-            throw new Error("Specified state property does not exist.")
-        }
-
-        if(this.#locked.includes(property)) {
-            throw new Error("Specified state property is not alterable.")
-        }
+        if (!this.propertyExists(property)) throw new Error(ERROR_PROPERTY_DOES_NOT_EXIST)
+        if (this.propertyIsLocked(property)) throw new Error(this.ERROR_PROPERTY_IS_LOCKED)
 
         this.#state[property] = value
-
         this.emit(property)
 
         return value
     }
 
     reset(property) {
-        if(!this.#state.hasOwnProperty(property)) {
-            throw new Error("Specified state property does not exist.")
-        }
-
-        if(this.#locked.includes(property)) {
-            throw new Error("Specified state property is not alterable.")
-        }
+        if (!this.propertyExists(property)) throw new Error(ERROR_PROPERTY_DOES_NOT_EXIST)
+        if (this.propertyIsLocked(property)) throw new Error(this.ERROR_PROPERTY_IS_LOCKED)
 
         return this.set(property, this.#initial[property])
     }
 
     remove(property) {
-        if(!this.#state.hasOwnProperty(property)) {
-            throw new Error("Specified state property does not exist.")
-        }
-
-        if(this.#locked.includes(property)) {
-            throw new Error("Specified state property is not alterable.")
-        }
+        if (!this.propertyExists(property)) throw new Error(ERROR_PROPERTY_DOES_NOT_EXIST)
+        if (this.propertyIsLocked(property)) throw new Error(this.ERROR_PROPERTY_IS_LOCKED)
 
         delete this.#state[property]
         delete this.#initial[property]
         delete this.#subscriptions[property]
-        this.#locked = this.#locked.filter((locked) => locked !== property)
 
         return this
     }
 
     subscribe(property, callback) {
-        if(typeof property === "string" && !this.#state.hasOwnProperty(property)) {
-            throw new Error("Specified state property does not exist.")
-        }
+        const propertyIsString = typeof property === this.TYPE_STRING
+        if (propertyIsString && !this.propertyExists(property)) throw new Error(ERROR_PROPERTY_DOES_NOT_EXIST)
 
+        const subscriptions = this.#subscriptions[property]
         Array.isArray(property)
             ? property.forEach((prop) => this.subscribe(prop, callback))
-            : this.#subscriptions[property].push(callback)
+            : subscriptions.push(callback)
     }
 
-    unsubscribe(property, callback=null) {
+    unsubscribe(property, callback = null) {
+        let subscriptions = this.#subscriptions[property]
         Array.isArray(property)
             ? property.forEach((prop) => this.unsubscribe(prop, callback))
-            : this.#subscriptions[property] = callback === null
+            : (subscriptions = callback === null
                 ? []
-                : this.#subscriptions[property].filter((cb) => cb !== callback)
+                : subscriptions.filter((cb) => cb !== callback))
     }
 
     emit(property) {
-        if (!this.#subscriptions[property]?.length) return
-  
+        const subscriptions = this.#subscriptions[property]
+        if (!subscriptions?.length) return
+
         const value = this.get(property)
-        this.#subscriptions[property].forEach((callback) => callback(value))
+        subscriptions.forEach((callback) => callback(value))
     }
 }
