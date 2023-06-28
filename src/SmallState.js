@@ -1,26 +1,36 @@
-export class SmallState {
+export default class SmallState {
     static #instance
     #state = {}
     #initial = {}
     #locked = []
     #subscriptions = {}
-    #propertyExists = (property) => this.#state.hasOwnProperty(property)
-    #propertyIsLocked = (property) => this.#locked.includes(property)
+    #check = {
+        isString: (str) => typeof str === "string",
+        isArray: (arr) => Array.isArray(arr),
+        propertyExists: (property) => this.#state.hasOwnProperty(property),
+        propertyIsLocked: (property) => this.#locked.includes(property),
+    }
+    #error = {
+        propertyAlredyExists: (property) => `Specified state property [${property}] already exists.`,
+        propertyDoesNotExist: (property) => `Specified state property [${property}] does not exist.`,
+        propertyIsLocked: (property) => `Specified state property [${property}] is not alterable.`,
+    }
 
     constructor() {
         if (SmallState.#instance) return SmallState.#instance
 
-        this.ERROR_PROPERTY_ALREADY_EXISTS = "Specified state property already exists."
-        this.ERROR_PROPERTY_DOES_NOT_EXIST = "Specified state property does not exist."
-        this.ERROR_PROPERTY_IS_LOCKED = "Specified state property is not alterable."
+        this.ERROR_PROPERTY_ALREADY_EXISTS = ""
+        this.ERROR_PROPERTY_DOES_NOT_EXIST = ""
+        this.ERROR_PROPERTY_IS_LOCKED = ""
         this.TYPE_STRING = "string"
 
         SmallState.#instance = this
+
+        return this
     }
 
     add(property, value = null, locked = false) {
-        const propertyAlredyExist = this.#propertyExists(property)
-        if (propertyAlredyExist) throw new Error(this.ERROR_PROPERTY_ALREADY_EXISTS)
+        if (this.#check.propertyExists(property)) throw new Error(this.#error.propertyAlredyExists(property))
 
         this.#initial[property] = value
         this.#state[property] = undefined
@@ -34,31 +44,31 @@ export class SmallState {
     }
 
     get(property) {
-        if (!this.#propertyExists(property)) throw new Error(this.ERROR_PROPERTY_DOES_NOT_EXIST)
+        if (!this.#check.propertyExists(property)) throw new Error(this.#error.propertyDoesNotExist(property))
 
         return this.#state[property]
     }
 
     set(property, value) {
-        if (!this.#propertyExists(property)) throw new Error(this.ERROR_PROPERTY_DOES_NOT_EXIST)
-        if (this.#propertyIsLocked(property)) throw new Error(this.ERROR_PROPERTY_IS_LOCKED)
+        if (!this.#check.propertyExists(property)) throw new Error(this.#error.propertyDoesNotExist(property))
+        if (this.#check.propertyIsLocked(property)) throw new Error(this.#error.propertyIsLocked(property))
 
         this.#state[property] = value
         this.emit(property)
 
-        return value
+        return this
     }
 
     reset(property) {
-        if (!this.#propertyExists(property)) throw new Error(this.ERROR_PROPERTY_DOES_NOT_EXIST)
-        if (this.#propertyIsLocked(property)) throw new Error(this.ERROR_PROPERTY_IS_LOCKED)
+        if (!this.#check.propertyExists(property)) throw new Error(this.#error.propertyDoesNotExist(property))
+        if (this.#check.propertyIsLocked(property)) throw new Error(this.#error.propertyIsLocked(property))
 
         return this.set(property, this.#initial[property])
     }
 
     remove(property) {
-        if (!this.#propertyExists(property)) throw new Error(this.ERROR_PROPERTY_DOES_NOT_EXIST)
-        if (this.#propertyIsLocked(property)) throw new Error(this.ERROR_PROPERTY_IS_LOCKED)
+        if (!this.#check.propertyExists(property)) throw new Error(this.#error.propertyDoesNotExist(property))
+        if (this.#check.propertyIsLocked(property)) throw new Error(this.#error.propertyIsLocked(property))
 
         delete this.#state[property]
         delete this.#initial[property]
@@ -68,18 +78,17 @@ export class SmallState {
     }
 
     subscribe(property, callback) {
-        const propertyIsString = typeof property === this.TYPE_STRING
-        if (propertyIsString && !this.#propertyExists(property)) throw new Error(this.ERROR_PROPERTY_DOES_NOT_EXIST)
+        if (this.#check.isString(property) && !this.#check.propertyExists(property)) throw new Error(this.#error.propertyDoesNotExist(property))
 
         const subscriptions = this.#subscriptions[property]
-        Array.isArray(property)
+        this.#check.isArray(property)
             ? property.forEach((prop) => this.subscribe(prop, callback))
             : subscriptions.push(callback)
     }
 
     unsubscribe(property, callback = null) {
         let subscriptions = this.#subscriptions[property]
-        Array.isArray(property)
+        this.#check.isArray(property)
             ? property.forEach((prop) => this.unsubscribe(prop, callback))
             : (subscriptions = callback === null
                 ? []
