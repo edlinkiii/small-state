@@ -1,4 +1,4 @@
-export default class SmallState {
+export class SmallState {
     static #instance
     #state = {}
     #initial = {}
@@ -7,29 +7,24 @@ export default class SmallState {
     #check = {
         isString: (str) => typeof str === "string",
         isArray: (arr) => Array.isArray(arr),
-        propertyExists: (property) => this.#state.hasOwnProperty(property),
+        isFunction: (func) => typeof func === "function",
+        propertyExists: (property) => Object.hasOwn(this.#state, property),
         propertyIsLocked: (property) => this.#locked.includes(property),
     }
     #error = {
         propertyAlredyExists: (property) => `Specified state property [${property}] already exists.`,
         propertyDoesNotExist: (property) => `Specified state property [${property}] does not exist.`,
         propertyIsLocked: (property) => `Specified state property [${property}] is not alterable.`,
+        functionIsRequired: (property) => `A function is required to add a subscriber for property (${property})`,
     }
 
     constructor() {
         if (SmallState.#instance) return SmallState.#instance
 
-        this.ERROR_PROPERTY_ALREADY_EXISTS = ""
-        this.ERROR_PROPERTY_DOES_NOT_EXIST = ""
-        this.ERROR_PROPERTY_IS_LOCKED = ""
-        this.TYPE_STRING = "string"
-
         SmallState.#instance = this
-
-        return this
     }
 
-    add(property, value = null, locked = false) {
+    add(property, value = null, lock = false) {
         if (this.#check.propertyExists(property)) throw new Error(this.#error.propertyAlredyExists(property))
 
         this.#initial[property] = value
@@ -38,7 +33,7 @@ export default class SmallState {
 
         this.reset(property)
 
-        if (locked) this.#locked.push(property)
+        if (lock) this.lock(property)
 
         return this
     }
@@ -77,8 +72,17 @@ export default class SmallState {
         return this
     }
 
-    subscribe(property, callback) {
+    lock(property) {
+        this.#locked = [...new Set([...this.#locked, property])]
+    }
+
+    unlock(property) {
+        this.#locked = this.#locked.filter((locked) => locked !== property)
+    }
+
+    subscribe(property, callback = null) {
         if (this.#check.isString(property) && !this.#check.propertyExists(property)) throw new Error(this.#error.propertyDoesNotExist(property))
+        if (!this.#check.isFunction(callback)) throw new Error(this.#error.functionIsRequired(property))
 
         const subscriptions = this.#subscriptions[property]
         this.#check.isArray(property)
@@ -93,6 +97,7 @@ export default class SmallState {
             : (subscriptions = callback === null
                 ? []
                 : subscriptions.filter((cb) => cb !== callback))
+        this.#subscriptions[property] = subscriptions
     }
 
     emit(property) {
