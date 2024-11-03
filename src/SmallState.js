@@ -27,9 +27,9 @@ export default class SmallState {
          * @return {String}
          */
         typeOf: (x) => {
-            if(x === undefined) return "undefined";
-            if(x === null) return "null";
-            return x.constructor.name.toLowerCase();
+            if(x === undefined) return "undefined"
+            if(x === null) return "null"
+            return x.constructor.name.toLowerCase()
         },
         /**
          * Is param a String
@@ -253,20 +253,26 @@ export default class SmallState {
      * Subscribe to changes
      *
      * @param {String|Array<String>} property property name
-     * @param {?Function} [callback=null]    function to execute when property value changes
+     * @param {Function} callback    function to execute when property value changes
      */
-    subscribe(property, callback = null) {
-        if (this.#check.isString(property) && !this.#check.propertyExists(property)) {
-            this.error(this.#error.propertyDoesNotExist(property))
-        }
+    subscribe(property, callback) {
         if (!this.#check.isFunction(callback)) {
             this.error(this.#error.functionIsRequired(/** @type {String} */ (property)))
+            return
         }
 
-        const subscriptions = this.#subscriptions[property]
-        this.#check.isArray(property)
-            ? property.forEach((prop) => this.subscribe(prop, callback))
-            : subscriptions.push(callback)
+        if(this.#check.isArray(property)) {
+            /** @type {Array<String>} */ (property).forEach((prop) => this.subscribe(prop, callback))
+            return
+        }
+
+        if (this.#check.isString(property)) {
+            if (!this.#check.propertyExists(property)) {
+                this.error(this.#error.propertyDoesNotExist(property))
+                return
+            }
+            this.#subscriptions[/** @type {String} */ (property)].push(callback)
+        }
     }
 
     /**
@@ -276,13 +282,27 @@ export default class SmallState {
      * @param {?Function} [callback=null]   callback function to remove, remove all if null
      */
     unsubscribe(property, callback = null) {
-        let subscriptions = this.#subscriptions[property]
-        this.#check.isArray(property)
-            ? property.forEach((prop) => this.unsubscribe(prop, callback))
-            : (subscriptions = callback === null
-                ? []
-                : subscriptions.filter((cb) => cb !== callback))
-        this.#subscriptions[property] = subscriptions
+        if(this.#check.isArray(property)) {
+            /** @type {Array<String>} */ (property).forEach((prop) => this.unsubscribe(prop, callback))
+            return
+        } else if (this.#check.isString(property)) {
+            if (!this.#check.propertyExists(property)) {
+                this.error(this.#error.propertyDoesNotExist(property))
+                return
+            }
+
+
+            if (callback === null) {
+                this.#subscriptions[/** @type {String} */ (property)] = null;
+            } else if (!this.#check.isFunction(callback)) {
+                /**
+                 * @param {Function} cb 
+                 * @returns {Boolean}
+                 */
+                const filterFunction = (cb) => cb !== callback
+                this.#subscriptions[/** @type {String} */ (property)].filter(filterFunction)
+            }
+        }
     }
 
     /**
